@@ -97,19 +97,19 @@ function buildPrompt(subtitles: string, requirements?: GenerationRequirements): 
 }
 
 function parseGeminiChunk(line: string): string | null {
-  const trimmed = line.trim();
+  let trimmed = line.trim();
   if (!trimmed || trimmed === '[{') return null;
 
   // 处理 JSON 数组格式
   if (trimmed.startsWith(',')) {
-    line = trimmed.slice(1);
+    trimmed = trimmed.slice(1);
   }
   if (trimmed.endsWith(']')) {
-    line = trimmed.slice(0, -1);
+    trimmed = trimmed.slice(0, -1);
   }
 
   try {
-    const data = JSON.parse(line);
+    const data = JSON.parse(trimmed);
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
     return text || null;
   } catch {
