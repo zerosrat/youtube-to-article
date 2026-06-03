@@ -7,11 +7,13 @@ import { ContextCache, generateSessionId, parseChapterFromContent } from './lib/
 import { generateFiveWOneH } from './lib/summarizer';
 
 interface Env {
-  CACHE: Cache;
   GEMINI_API_KEY: string;
 }
 
 const app = new Hono<{ Bindings: Env }>();
+
+// Get the default cache instance
+const getCache = () => caches.default;
 
 // CORS middleware
 app.use('*', async (c, next) => {
@@ -57,7 +59,7 @@ app.get('/api/generate-article', async (c) => {
   }
 
   return streamSSE(c, async (stream) => {
-    const cache = new ContextCache(c.env.CACHE);
+    const cache = new ContextCache(getCache());
     let fullContent = '';
     let currentChapterId: string | null = null;
 
@@ -128,7 +130,7 @@ app.post('/api/summarize-chapter', async (c) => {
     return c.json({ success: false, error: 'sessionId and chapterId are required' }, 400);
   }
 
-  const cache = new ContextCache(c.env.CACHE);
+  const cache = new ContextCache(getCache());
   const context = await cache.getContext(sessionId);
 
   if (!context) {

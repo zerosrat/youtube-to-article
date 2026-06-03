@@ -2,8 +2,4 @@ name = "youtube-to-article"
 main = "src/index.ts"
 compatibility_date = "2024-04-01"
 
-# 本地开发使用内存缓存
-[[kv_namespaces]]
-binding = "CACHE"
-id = "local_cache"
-preview_id = "local_cache"
+# Cache API is available by default in Workers
