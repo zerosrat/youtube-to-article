@@ -2,11 +2,8 @@ name = "youtube-to-article"
 main = "src/index.ts"
 compatibility_date = "2024-04-01"
 
-[vars]
-# 本地开发时使用，生产环境通过 wrangler secret 设置
-# GEMINI_API_KEY = ""
-
+# 本地开发使用内存缓存
 [[kv_namespaces]]
 binding = "CACHE"
-id = ""
-preview_id = ""
+id = "local_cache"
+preview_id = "local_cache"
