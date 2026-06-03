@@ -1,0 +1,16 @@
+{
+  "name": "youtube-to-article",
+  "version": "1.0.0",
+  "description": "YouTube video to Chinese dialogue article converter",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter frontend dev",
+    "dev:worker": "pnpm --filter worker dev",
+    "build": "pnpm --filter frontend build",
+    "deploy": "pnpm build && pnpm --filter worker deploy"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  },
+  "packageManager": "pnpm@9.0.0"
+}
