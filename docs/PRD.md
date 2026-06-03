@@ -47,7 +47,7 @@
 
 参考下面在无提升要求条件下的基础生成演示结果。
 
-视频： <https://www\.youtube\.com/watch?v=xRh2sVcNXQ8>
+视频： <https://www.youtube.com/watch?v=xRh2sVcNXQ8>
 
 生成的对话排版 [对话安德森：AI革命的万亿美金之问](https://msgeanzs2xvq.sg.larksuite.com/docx/IfDxduc1HoUr3Gx81Bul14CLgog)
 
