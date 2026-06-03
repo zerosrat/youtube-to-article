@@ -10,7 +10,8 @@ export class ContextCache {
   }
 
   private getKey(sessionId: string): string {
-    return `article:${sessionId}`;
+    // Cache API requires fully-qualified URL as key (used as internal identifier, not fetched)
+    return `https://cache.internal/article:${sessionId}`;
   }
 
   async saveContext(context: ArticleContext): Promise<void> {

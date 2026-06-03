@@ -1,6 +1,6 @@
 import type { GenerationRequirements } from '../types';
 
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent';
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse';
 
 export interface GeminiStreamOptions {
   subtitles: string;
@@ -15,24 +15,39 @@ export async function* streamGenerateArticle(
 
   const prompt = buildPrompt(subtitles, requirements);
 
-  const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      contents: [{
-        parts: [{ text: prompt }]
-      }],
-      generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 8192
-      }
-    })
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+  let response: Response;
+  try {
+    response = await fetch(`${GEMINI_API_URL}&key=${apiKey}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{ text: prompt }]
+        }],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 8192
+        }
+      }),
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('Gemini API request timed out after 30 seconds');
+    }
+    throw error;
+  }
 
   if (!response.ok) {
-    throw new Error(`Gemini API error: ${response.status}`);
+    const errorText = await response.text().catch(() => 'Unknown error');
+    throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
   }
 
   const reader = response.body?.getReader();
@@ -99,6 +114,11 @@ function buildPrompt(subtitles: string, requirements?: GenerationRequirements): 
 function parseGeminiChunk(line: string): string | null {
   let trimmed = line.trim();
   if (!trimmed || trimmed === '[{') return null;
+
+  // 处理 SSE 格式: "data: {...}"
+  if (trimmed.startsWith('data: ')) {
+    trimmed = trimmed.slice(6);
+  }
 
   // 处理 JSON 数组格式
   if (trimmed.startsWith(',')) {
