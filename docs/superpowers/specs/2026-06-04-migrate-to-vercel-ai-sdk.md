@@ -1,5 +1,7 @@
 # 迁移到 Vercel AI SDK 设计文档
 
+> 创建日期：2026-06-04
+
 ## 背景与目标
 
 当前 YouTube to Article 项目的手动 LLM 调用实现存在以下维护痛点：
