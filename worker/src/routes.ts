@@ -2,9 +2,8 @@ import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import type { SubtitleRequest, SummarizeRequest } from './types';
 import { extractSubtitles } from './lib/subtitles';
-import { streamGenerateArticle } from './lib/gemini';
+import { streamArticle, generateFiveWOneH } from './lib/llm';
 import { ContextCache, generateSessionId, parseChapterFromContent } from './lib/context-cache';
-import { generateFiveWOneH } from './lib/summarizer';
 
 interface Env {
   GEMINI_API_KEY: string;
@@ -64,13 +63,13 @@ app.get('/api/generate-article', async (c) => {
     let currentChapterId: string | null = null;
 
     try {
-      const generator = streamGenerateArticle({
+      const { textStream } = await streamArticle({
         subtitles: decodedSubtitles,
         requirements,
         apiKey
       });
 
-      for await (const chunk of generator) {
+      for await (const chunk of textStream) {
         fullContent += chunk;
 
         // 检测章节标题
@@ -137,13 +136,24 @@ app.post('/api/summarize-chapter', async (c) => {
     return c.json({ success: false, error: 'Context expired or not found' }, 410);
   }
 
+  // Find the chapter from context
+  const chapter = context.chapters.find(ch => ch.id === chapterId);
+  if (!chapter) {
+    return c.json({ success: false, error: 'Chapter not found' }, 404);
+  }
+
   const apiKey = c.env.GEMINI_API_KEY;
   if (!apiKey) {
     return c.json({ success: false, error: 'Gemini API key not configured' }, 500);
   }
 
   try {
-    const summary = await generateFiveWOneH(context, chapterId, apiKey);
+    const summary = await generateFiveWOneH({
+      fullArticle: context.fullArticle,
+      chapterTitle: chapter.title,
+      chapterContent: chapter.content,
+      apiKey
+    });
     return c.json({ success: true, summary });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
