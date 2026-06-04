@@ -9,7 +9,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "hono": "^4.0.0"
+    "@ai-sdk/google": "3.0.80",
+    "ai": "6.0.195",
+    "hono": "^4.0.0",
+    "zod": "3.25.76"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20240400.0",
