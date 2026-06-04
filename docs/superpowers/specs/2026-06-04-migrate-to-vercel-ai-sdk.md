@@ -103,7 +103,7 @@ export async function generateFiveWOneH(
   const prompt = buildFiveWOneHPrompt(fullArticle, chapterTitle, chapterContent);
 
   const result = await generateText({
-    model: google('gemini-1.5-flash', { apiKey }),
+    model: google('gemini-2.5-flash', { apiKey }),
     prompt,
     temperature: 0.3,
   });
@@ -393,7 +393,7 @@ app.post('/api/summarize-chapter', async (c) => {
 ## 风险与注意事项
 
 1. **Bundle 体积增加**：`ai` 包会增加约 100-200KB（gzipped），但对于个人项目可接受
-2. **模型版本**：使用 `gemini-2.5-flash` 和 `gemini-1.5-flash`，后续可通过修改 provider 参数切换模型
+2. **模型版本**：统一使用 `gemini-2.5-flash`，后续可通过修改 provider 参数切换模型
 3. **章节检测**：保留现有的正则匹配 `## 标题` 逻辑，SDK 不改变输出格式
 4. **前端兼容性**：保持 SSE 事件格式不变，前端无需修改
 
@@ -403,3 +403,4 @@ app.post('/api/summarize-chapter', async (c) => {
 - [ ] 流式生成和非流式生成使用统一的 SDK API
 - [ ] 前端无需任何修改即可正常工作
 - [ ] 后续切换模型只需改一行配置（`google('model-name')`）
+- [ ] curl 测试通过：流式接口返回 SSE 格式，5W1H 接口返回正确 JSON
