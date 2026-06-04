@@ -52,7 +52,8 @@ export interface SummarizeRequest {
 
 export interface SummarizeResponse {
   success: boolean;
-  summary: FiveWOneH;
+  summary?: FiveWOneH;
+  error?: string;
 }
 
 export type SSEEvent =

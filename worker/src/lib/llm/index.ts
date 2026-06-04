@@ -51,10 +51,18 @@ export interface FiveWOneH {
 }
 
 function parseFiveWOneH(text: string): FiveWOneH {
+  console.log('[DEBUG] Raw LLM response:', text);
   try {
-    const parsed = JSON.parse(text);
+    // Try to extract JSON from markdown code block if present
+    const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    const jsonText = jsonMatch ? jsonMatch[1] : text;
+    console.log('[DEBUG] Extracted JSON text:', jsonText);
+
+    const parsed = JSON.parse(jsonText);
+    console.log('[DEBUG] Parsed JSON:', parsed);
     return validateFiveWOneH(parsed);
-  } catch {
+  } catch (e) {
+    console.log('[DEBUG] JSON parse failed, falling back to text extraction. Error:', e);
     return extractFromText(text);
   }
 }
@@ -72,10 +80,24 @@ function validateFiveWOneH(data: unknown): FiveWOneH {
 }
 
 function extractFromText(text: string): FiveWOneH {
+  console.log('[DEBUG] Extracting from text:', text);
+
   const extract = (label: string): string => {
-    const regex = new RegExp(`${label}[：:]\\s*(.+?)(?=\\n|$)`, 'i');
-    const match = text.match(regex);
-    return match?.[1]?.trim() || '暂无信息';
+    // 尝试多种格式: "Who: xxx", "Who：xxx", "who": "xxx", "Who":"xxx"
+    const patterns = [
+      new RegExp(`["']?${label}["']?\\s*[：:]\\s*["']?([^"'\\n]+)["']?(?=\\n|$)`, 'i'),
+      new RegExp(`["']?${label.toLowerCase()}["']?\\s*[:：]\\s*["']?([^"'\\n]+)["']?(?=\\n|$)`, 'i'),
+    ];
+
+    for (const regex of patterns) {
+      const match = text.match(regex);
+      if (match?.[1]?.trim()) {
+        console.log(`[DEBUG] Extracted ${label}:`, match[1].trim());
+        return match[1].trim();
+      }
+    }
+    console.log(`[DEBUG] Failed to extract ${label}`);
+    return '暂无信息';
   };
 
   return {

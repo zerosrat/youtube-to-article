@@ -1,4 +1,5 @@
 import { summarizeChapter } from '../lib/api';
+import type { FiveWOneH } from '../../../worker/src/types';
 
 export class FiveWOneHPanel {
   private element: HTMLDivElement;
@@ -6,7 +7,7 @@ export class FiveWOneHPanel {
   private chapterId: string;
   private isOpen = false;
   private isLoading = false;
-  private cachedSummary: Record<string, string> | null = null;
+  private cachedSummary: FiveWOneH | null = null;
 
   constructor(container: HTMLElement, sessionId: string, chapterId: string) {
     this.sessionId = sessionId;
@@ -46,7 +47,7 @@ export class FiveWOneHPanel {
     `;
   }
 
-  private renderSummary(summary: Record<string, string>): string {
+  private renderSummary(summary: FiveWOneH): string {
     const fields = [
       { key: 'who', label: 'Who', desc: '主体' },
       { key: 'what', label: 'What', desc: '事件' },
@@ -56,15 +57,18 @@ export class FiveWOneHPanel {
       { key: 'how', label: 'How', desc: '方式' }
     ];
 
-    return fields.map(({ key, label, desc }) => `
-      <div class="flex gap-3">
-        <div class="w-16 flex-shrink-0">
-          <div class="text-xs font-semibold text-primary-600">${label}</div>
-          <div class="text-xs text-gray-400">${desc}</div>
+    return fields.map(({ key, label, desc }) => {
+      const value = summary[key as keyof FiveWOneH];
+      return `
+        <div class="flex gap-3">
+          <div class="w-16 flex-shrink-0">
+            <div class="text-xs font-semibold text-primary-600">${label}</div>
+            <div class="text-xs text-gray-400">${desc}</div>
+          </div>
+          <div class="flex-1 text-sm text-gray-700 leading-relaxed">${value || '暂无信息'}</div>
         </div>
-        <div class="flex-1 text-sm text-gray-700 leading-relaxed">${summary[key] || '暂无信息'}</div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
   }
 
   private bindEvents(): void {
@@ -100,7 +104,7 @@ export class FiveWOneHPanel {
     try {
       const result = await summarizeChapter(this.sessionId, this.chapterId);
 
-      if (result.success) {
+      if (result.success && result.summary) {
         this.cachedSummary = result.summary;
         if (contentContainer) {
           contentContainer.innerHTML = this.renderSummary(result.summary);
