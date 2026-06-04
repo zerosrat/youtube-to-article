@@ -1,5 +1,5 @@
 import { streamText, generateText } from 'ai';
-import { google } from '@ai-sdk/google';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import type { GenerationRequirements } from '../../types';
 import { buildArticlePrompt, buildFiveWOneHPrompt } from './prompts';
 
@@ -22,11 +22,13 @@ export async function streamArticle(
   const { subtitles, requirements, apiKey } = options;
   const prompt = buildArticlePrompt(subtitles, requirements);
 
+  const google = createGoogleGenerativeAI({ apiKey });
+
   const result = streamText({
-    model: google('gemini-2.5-flash', { apiKey }),
+    model: google('gemini-2.5-flash'),
     prompt,
     temperature: 0.7,
-    maxTokens: 8192,
+    maxOutputTokens: 8192,
   });
 
   return { textStream: result.textStream };
@@ -95,8 +97,10 @@ export async function generateFiveWOneH(
   const { fullArticle, chapterTitle, chapterContent, apiKey } = options;
   const prompt = buildFiveWOneHPrompt(fullArticle, chapterTitle, chapterContent);
 
+  const google = createGoogleGenerativeAI({ apiKey });
+
   const result = await generateText({
-    model: google('gemini-2.5-flash', { apiKey }),
+    model: google('gemini-2.5-flash'),
     prompt,
     temperature: 0.3,
   });
