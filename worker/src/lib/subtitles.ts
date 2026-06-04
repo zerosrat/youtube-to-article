@@ -63,13 +63,70 @@ export async function extractSubtitles(url: string): Promise<SubtitleResult> {
   return useFallback('YouTube 提取失败，使用演示数据');
 }
 
+// 从 HTML 中提取 ytInitialPlayerResponse
+// 使用括号平衡算法，确保提取完整的 JSON
+function extractPlayerResponse(html: string): string | null {
+  const startMarker = 'var ytInitialPlayerResponse = ';
+  const startIdx = html.indexOf(startMarker);
+  if (startIdx === -1) return null;
+
+  let braceCount = 0;
+  let inString = false;
+  let escapeNext = false;
+  let jsonStart = startIdx + startMarker.length;
+
+  for (let i = jsonStart; i < html.length; i++) {
+    const char = html[i];
+
+    if (escapeNext) {
+      escapeNext = false;
+      continue;
+    }
+
+    if (char === '\\') {
+      escapeNext = true;
+      continue;
+    }
+
+    if (char === '"' && !inString) {
+      inString = true;
+    } else if (char === '"' && inString) {
+      inString = false;
+    } else if (!inString) {
+      if (char === '{') braceCount++;
+      else if (char === '}') braceCount--;
+
+      if (braceCount === 0) {
+        return html.substring(jsonStart, i + 1);
+      }
+    }
+  }
+
+  return null;
+}
+
+// 浏览器请求头，用于绕过 YouTube 检测
+const BROWSER_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+  'Accept-Language': 'en-US,en;q=0.5',
+  'Accept-Encoding': 'gzip, deflate, br',
+  'DNT': '1',
+  'Connection': 'keep-alive',
+  'Upgrade-Insecure-Requests': '1',
+  'Sec-Fetch-Dest': 'document',
+  'Sec-Fetch-Mode': 'navigate',
+  'Sec-Fetch-Site': 'none',
+  'Cache-Control': 'max-age=0',
+};
+
 async function fetchYouTubeSubtitles(
   videoId: string
 ): Promise<{ title: string; subtitles: string } | null> {
   try {
     // 1. 请求 YouTube 页面
     const pageUrl = `https://www.youtube.com/watch?v=${videoId}`;
-    const pageResponse = await fetch(pageUrl);
+    const pageResponse = await fetch(pageUrl, { headers: BROWSER_HEADERS });
     if (!pageResponse.ok) {
       console.warn(`YouTube page fetch failed: ${pageResponse.status}`);
       return null;
@@ -77,16 +134,14 @@ async function fetchYouTubeSubtitles(
     const html = await pageResponse.text();
 
     // 2. 从 HTML 中提取 ytInitialPlayerResponse
-    const playerResponseMatch = html.match(
-      /var ytInitialPlayerResponse = ({[\s\S]+?});\s*<\/script>/
-    );
-    if (!playerResponseMatch) {
+    const playerResponseJson = extractPlayerResponse(html);
+    if (!playerResponseJson) {
       return null;
     }
 
     let playerResponse: PlayerResponse;
     try {
-      playerResponse = JSON.parse(playerResponseMatch[1]) as PlayerResponse;
+      playerResponse = JSON.parse(playerResponseJson) as PlayerResponse;
     } catch {
       return null;
     }
@@ -125,7 +180,7 @@ async function fetchYouTubeSubtitles(
 
     // 5. 请求 baseUrl + &fmt=json3
     const captionUrl = baseUrl + '&fmt=json3';
-    const captionResponse = await fetch(captionUrl);
+    const captionResponse = await fetch(captionUrl, { headers: BROWSER_HEADERS });
     if (!captionResponse.ok) {
       console.warn(`Caption fetch failed: ${captionResponse.status}`);
       return null;
