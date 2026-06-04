@@ -32,7 +32,7 @@ export class ContextCache {
 
     if (!response) return null;
 
-    const data = await response.json();
+    const data = await response.json() as ArticleContext & { createdAt: number };
 
     // 检查是否过期
     if (Date.now() - data.createdAt > CACHE_TTL) {
