@@ -1,5 +1,6 @@
 name = "youtube-to-article"
 main = "src/index.ts"
 compatibility_date = "2024-04-01"
+workers_dev = true
 
 # Cache API is available by default in Workers

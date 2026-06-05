@@ -31,7 +31,7 @@ export function streamGenerateArticle(options: GenerateOptions): () => void {
   const { subtitles, requirements, sessionId, onChunk, onChapter, onDone, onError } = options;
 
   const params = new URLSearchParams({
-    subtitles: encodeURIComponent(subtitles),
+    subtitles,  // URLSearchParams 会自动编码，不需要手动 encode
     sessionId
   });
 
