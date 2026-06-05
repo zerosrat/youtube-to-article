@@ -5,37 +5,20 @@ export interface TranscriptResult {
   subtitles: string;
 }
 
-interface TranscriptItem {
+// API returns an array directly, not an object with items
+interface APITranscriptItem {
   id: string;
   title: string;
-  transcripts: Array<{
-    language: string;
-    text: string;
-  }>;
+  text: string;
+  // API may return other fields like microformat, etc.
 }
 
-interface TranscriptResponse {
-  pageInfo: {
-    totalResults: number;
-  };
-  items: TranscriptItem[];
-}
-
-const LANGUAGE_PRIORITY = ['en', 'zh', 'zh-CN', 'zh-TW'];
 const MIN_INTERVAL_MS = 2100; // 5 requests per 10 seconds = 2s per request
 
 let lastRequestTime = 0;
 
 async function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-function selectTranscript(transcripts: TranscriptItem['transcripts']): string {
-  for (const lang of LANGUAGE_PRIORITY) {
-    const match = transcripts.find(t => t.language === lang);
-    if (match) return match.text;
-  }
-  return transcripts[0]?.text || '';
 }
 
 export interface FetchTranscriptOptions {
@@ -92,29 +75,27 @@ export async function fetchTranscriptViaAPI(
       return null;
     }
 
-    const data = await response.json() as TranscriptResponse;
-    console.log(`[TranscriptAPI] Got response with ${data.items?.length || 0} items`);
+    // API returns an array directly, not {items: [...]}
+    const data = await response.json() as APITranscriptItem[];
+    console.log(`[TranscriptAPI] Got response with ${data?.length || 0} items`);
 
-    if (!data.items || data.items.length === 0) {
+    if (!data || data.length === 0) {
       console.warn('[TranscriptAPI] No items in response');
       return null;
     }
 
-    const item = data.items[0];
+    const item = data[0];
 
-    if (!item.transcripts || item.transcripts.length === 0) {
-      console.warn('[TranscriptAPI] No transcripts available for this video');
+    if (!item.text) {
+      console.warn('[TranscriptAPI] No transcript text available for this video');
       return null;
     }
 
-    console.log(`[TranscriptAPI] Available languages: ${item.transcripts.map(t => t.language).join(', ')}`);
-
-    const subtitles = selectTranscript(item.transcripts);
-    console.log(`[TranscriptAPI] Selected subtitle length: ${subtitles.length}`);
+    console.log(`[TranscriptAPI] Transcript length: ${item.text.length}`);
 
     return {
-      title: item.title,
-      subtitles
+      title: item.title || 'Unknown Title',
+      subtitles: item.text
     };
 
   } catch (error) {
