@@ -1,4 +1,5 @@
 import { FALLBACK_VIDEO } from './fallback-data';
+import { fetchTranscriptViaAPI } from './youtube-transcript-api';
 
 export interface SubtitleResult {
   success: boolean;
@@ -37,7 +38,13 @@ export function extractVideoId(url: string): string | null {
   return null;
 }
 
-export async function extractSubtitles(url: string): Promise<SubtitleResult> {
+export interface ExtractSubtitlesOptions {
+  url: string;
+  apiToken?: string;
+}
+
+export async function extractSubtitles(options: ExtractSubtitlesOptions): Promise<SubtitleResult> {
+  const { url, apiToken } = options;
   console.log('[extractSubtitles] Starting with URL:', url);
 
   const videoId = extractVideoId(url);
@@ -48,11 +55,33 @@ export async function extractSubtitles(url: string): Promise<SubtitleResult> {
     return useFallback('无效的 YouTube 链接');
   }
 
+  // Try API first if token is available
+  if (apiToken) {
+    console.log('[extractSubtitles] Trying transcript API...');
+    try {
+      const result = await fetchTranscriptViaAPI({ videoId, apiToken });
+      console.log('[extractSubtitles] API returned:', result ? 'success' : 'null');
+
+      if (result) {
+        return {
+          success: true,
+          source: 'youtube',
+          title: result.title,
+          subtitles: result.subtitles
+        };
+      }
+    } catch (error) {
+      console.error('[extractSubtitles] API error:', error);
+    }
+  } else {
+    console.log('[extractSubtitles] No API token, skipping API attempt');
+  }
+
+  // Fallback to direct YouTube extraction (likely to fail in Worker env)
+  console.log('[extractSubtitles] Trying direct YouTube extraction...');
   try {
-    console.log('[extractSubtitles] Calling fetchYouTubeSubtitles...');
-    // 尝试获取 YouTube 字幕
     const result = await fetchYouTubeSubtitles(videoId);
-    console.log('[extractSubtitles] fetchYouTubeSubtitles returned:', result ? 'success' : 'null');
+    console.log('[extractSubtitles] Direct extraction returned:', result ? 'success' : 'null');
 
     if (result) {
       return {
@@ -63,11 +92,10 @@ export async function extractSubtitles(url: string): Promise<SubtitleResult> {
       };
     }
   } catch (error) {
-    console.error('[extractSubtitles] Error caught:', error);
+    console.error('[extractSubtitles] Direct extraction error:', error);
   }
 
-  console.log('[extractSubtitles] Using fallback');
-  // Fallback 到硬编码数据
+  console.log('[extractSubtitles] All methods failed, using fallback');
   return useFallback('YouTube 提取失败，使用演示数据');
 }
 
