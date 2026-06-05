@@ -68,9 +68,15 @@ wrangler pages deploy dist
 
 ## 实现细节
 
-### 字幕获取
+### 如何获取和处理 YouTube 字幕
 
-项目尝试从 YouTube 提取字幕，如遇验证码/网络问题，自动降级到硬编码的演示字幕。
+项目使用 **youtube-transcript.io API** 获取 YouTube 视频字幕：
+
+1. **API 调用**: 后端向 `https://www.youtube-transcript.io/api/transcripts` 发送 POST 请求，携带视频 ID
+2. **认证方式**: 使用 Basic Auth，`Authorization: Basic <your-api-token>`
+3. **限流保护**: 客户端限流控制（2.1 秒/请求），避免触发 API 的 5 请求/10 秒限制
+4. **语言选择**: 优先返回英文或中文字幕（优先级：en → zh → zh-CN → zh-TW），无匹配时返回首个可用语言
+5. **Fallback 机制**: API 失败或视频无字幕时，自动降级到硬编码的演示字幕，保证用户体验
 
 ### 流式输出
 
