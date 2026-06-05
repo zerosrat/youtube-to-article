@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
-import type { SubtitleRequest, SummarizeRequest } from './types';
+import type { SubtitleRequest, SummarizeRequest, GenerateRequest } from './types';
 import { extractSubtitles } from './lib/subtitles';
 import { streamArticle, generateFiveWOneH } from './lib/llm';
 import { ContextCache, generateSessionId, parseChapterFromContent } from './lib/context-cache';
@@ -44,17 +44,15 @@ app.post('/api/extract-subtitles', async (c) => {
 });
 
 // 生成文章（SSE 流式）
-app.get('/api/generate-article', async (c) => {
-  const subtitles = c.req.query('subtitles');
-  const requirementsStr = c.req.query('requirements');
-  const sessionId = c.req.query('sessionId') || generateSessionId();
+app.post('/api/generate-article', async (c) => {
+  const body = await c.req.json<GenerateRequest>();
+  const { subtitles, requirements, sessionId: clientSessionId } = body;
 
   if (!subtitles) {
     return c.json({ error: 'Subtitles are required' }, 400);
   }
 
-  const requirements = requirementsStr ? JSON.parse(decodeURIComponent(requirementsStr)) : undefined;
-  const decodedSubtitles = decodeURIComponent(subtitles);
+  const sessionId = clientSessionId || generateSessionId();
   const apiKey = c.env.GEMINI_API_KEY;
 
   if (!apiKey) {
@@ -68,7 +66,7 @@ app.get('/api/generate-article', async (c) => {
 
     try {
       const { textStream } = await streamArticle({
-        subtitles: decodedSubtitles,
+        subtitles,
         requirements,
         apiKey
       });

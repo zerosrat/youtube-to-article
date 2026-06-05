@@ -1,4 +1,4 @@
-import type { SubtitleRequest, SubtitleResponse, SummarizeRequest, SummarizeResponse } from '../../../worker/src/types';
+import type { SubtitleRequest, SubtitleResponse, SummarizeRequest, SummarizeResponse, GenerateRequest } from '../../../worker/src/types';
 
 const API_BASE = '/api';
 
@@ -30,46 +30,89 @@ export interface GenerateOptions {
 export function streamGenerateArticle(options: GenerateOptions): () => void {
   const { subtitles, requirements, sessionId, onChunk, onChapter, onDone, onError } = options;
 
-  const params = new URLSearchParams({
-    subtitles,  // URLSearchParams 会自动编码，不需要手动 encode
-    sessionId
+  const controller = new AbortController();
+
+  fetch(`${API_BASE}/generate-article`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ subtitles, requirements, sessionId } satisfies GenerateRequest),
+    signal: controller.signal
+  }).then(async (response) => {
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Request failed' }));
+      onError(errorData.error || `HTTP ${response.status}`);
+      return;
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) {
+      onError('No response body');
+      return;
+    }
+
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // SSE 格式解析: data: {...}\n\nevent: xxx\n\n
+        const messages = buffer.split('\n\n');
+        buffer = messages.pop() || ''; // 保留不完整的部分
+
+        for (const message of messages) {
+          const lines = message.split('\n');
+          let event = 'message';
+          let data = '';
+
+          for (const line of lines) {
+            if (line.startsWith('event:')) {
+              event = line.slice(6).trim();
+            } else if (line.startsWith('data:')) {
+              data = line.slice(5).trim();
+            }
+          }
+
+          if (!data) continue;
+
+          try {
+            const parsed = JSON.parse(data);
+
+            switch (event) {
+              case 'chunk':
+                onChunk(parsed.text);
+                break;
+              case 'chapter':
+                onChapter(parsed.id, parsed.title);
+                break;
+              case 'done':
+                onDone(parsed.sessionId);
+                break;
+              case 'error':
+                onError(parsed.message || 'Stream error');
+                break;
+            }
+          } catch {
+            // 忽略解析错误
+          }
+        }
+      }
+    } catch (error) {
+      if ((error as Error).name !== 'AbortError') {
+        onError((error as Error).message || 'Stream error');
+      }
+    }
+  }).catch((error) => {
+    if (error.name !== 'AbortError') {
+      onError(error.message || 'Connection error');
+    }
   });
 
-  if (requirements) {
-    params.set('requirements', encodeURIComponent(JSON.stringify(requirements)));
-  }
-
-  const eventSource = new EventSource(`${API_BASE}/generate-article?${params}`);
-
-  eventSource.addEventListener('chunk', (e) => {
-    const data = JSON.parse(e.data);
-    onChunk(data.text);
-  });
-
-  eventSource.addEventListener('chapter', (e) => {
-    const data = JSON.parse(e.data);
-    onChapter(data.id, data.title);
-  });
-
-  eventSource.addEventListener('done', (e) => {
-    const data = JSON.parse(e.data);
-    onDone(data.sessionId);
-    eventSource.close();
-  });
-
-  eventSource.addEventListener('error', (e) => {
-    const data = JSON.parse((e as MessageEvent).data || '{}');
-    onError(data.message || 'Stream error');
-    eventSource.close();
-  });
-
-  eventSource.onerror = () => {
-    onError('Connection error');
-    eventSource.close();
-  };
-
-  // 返回取消函数
-  return () => eventSource.close();
+  return () => controller.abort();
 }
 
 export async function summarizeChapter(sessionId: string, chapterId: string): Promise<SummarizeResponse> {

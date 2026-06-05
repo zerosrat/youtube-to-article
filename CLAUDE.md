@@ -65,7 +65,7 @@ This file is gitignored. Never commit API keys.
 All API endpoints are in `worker/src/routes.ts`:
 
 - `POST /api/extract-subtitles` - Extract YouTube subtitles (with fallback)
-- `GET /api/generate-article` - SSE stream for article generation
+- `POST /api/generate-article` - SSE stream for article generation (body: `{subtitles, requirements?, sessionId}`)
 - `POST /api/summarize-chapter` - Generate 5W1H summary for a chapter
 
 ## Key Implementation Details
@@ -81,8 +81,8 @@ All API endpoints are in `worker/src/routes.ts`:
 - TTL: 1 hour
 
 **Frontend API Client (`frontend/src/lib/api.ts`):**
-- Uses EventSource for SSE connections
-- Returns cleanup function to close connection
+- Uses fetch + ReadableStream for SSE (POST body instead of URL params)
+- Returns cleanup function to abort connection
 
 **Known Limitations:**
 - YouTube subtitle extraction currently returns null (uses hardcoded fallback)
@@ -103,6 +103,8 @@ curl -X POST http://localhost:8787/api/extract-subtitles \
   -d '{"url": "https://www.youtube.com/watch?v=xRh2sVcNXQ8"}'
 
 # Test article generation (SSE)
-curl -N 'http://localhost:8787/api/generate-article?subtitles=test&sessionId=test' \
-  -H 'Accept: text/event-stream'
+curl -N -X POST http://localhost:8787/api/generate-article \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: text/event-stream' \
+  -d '{"subtitles": "test content", "sessionId": "test"}'
 ```
