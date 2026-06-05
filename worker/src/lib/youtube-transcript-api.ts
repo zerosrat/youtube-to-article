@@ -61,8 +61,8 @@ export async function fetchTranscriptViaAPI(
   lastRequestTime = Date.now();
 
   try {
-    // Build Basic Auth header (token + empty password, base64 encoded)
-    const authHeader = 'Basic ' + btoa(apiToken + ':');
+    // Build Auth header (API expects raw token, not base64)
+    const authHeader = 'Basic ' + apiToken;
     console.log(`[TranscriptAPI] Sending request to API`);
 
     const response = await fetch('https://www.youtube-transcript.io/api/transcripts', {
