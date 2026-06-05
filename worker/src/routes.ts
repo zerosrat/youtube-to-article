@@ -7,6 +7,7 @@ import { ContextCache, generateSessionId, parseChapterFromContent } from './lib/
 
 interface Env {
   GEMINI_API_KEY: string;
+  YOUTUBE_TRANSCRIPT_API_TOKEN?: string;
 }
 
 const app = new Hono<{ Bindings: Env }>();
@@ -35,7 +36,10 @@ app.post('/api/extract-subtitles', async (c) => {
     return c.json({ success: false, error: 'URL is required' }, 400);
   }
 
-  const result = await extractSubtitles(body.url);
+  const result = await extractSubtitles({
+    url: body.url,
+    apiToken: c.env.YOUTUBE_TRANSCRIPT_API_TOKEN
+  });
   return c.json(result);
 });
 
