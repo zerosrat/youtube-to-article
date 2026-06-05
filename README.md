@@ -78,6 +78,17 @@ wrangler pages deploy dist
 4. **语言选择**: 优先返回英文或中文字幕（优先级：en → zh → zh-CN → zh-TW），无匹配时返回首个可用语言
 5. **Fallback 机制**: API 失败或视频无字幕时，自动降级到硬编码的演示字幕，保证用户体验
 
+**技术选型过程**
+
+| 方案 | 尝试 | 问题 | 结论 |
+|------|------|------|------|
+| 直接请求 YouTube | 通过 `fetch()` 请求 `youtube.com/watch?v=xxx` 并解析 `ytInitialPlayerResponse` | Cloudflare Worker 环境 `Network connection lost`，本地开发也无法连接 | 不可行 |
+| HTTP 代理 | 使用 webshare.io 代理绕过网络限制 | 代理可连接，但 YouTube 检测到数据中心 IP 后要求登录验证，无法获取字幕数据 | 不可行 |
+| 代理 + 登录 | 通过 SOCKS5 + TCP Socket 连接，模拟浏览器登录 | 需要处理 reCAPTCHA、设备指纹、Cookie 管理，复杂度过高且账号易被封禁 | 成本过高 |
+| **第三方 API** | 使用 youtube-transcript.io 专业字幕服务 | 需要处理限流和付费，但稳定可靠 | **最终选择** |
+
+**取舍**: 牺牲完全免费和零依赖，换取开发效率和稳定性。第三方 API 的限流（5 请求/10 秒）对单用户使用足够，且 Fallback 机制保证体验不中断。
+
 ### 流式输出
 
 使用 Server-Sent Events (SSE) 实现流式生成，用户可实时看到 AI 生成的内容。
