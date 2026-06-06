@@ -1,5 +1,6 @@
 import { generateText } from 'ai';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { GEMINI_MODEL } from './llm/model';
 
 export async function translateTitle(title: string, apiKey: string): Promise<string> {
   // 检测是否包含中文字符
@@ -16,7 +17,7 @@ export async function translateTitle(title: string, apiKey: string): Promise<str
 ${title}`;
 
     const result = await generateText({
-      model: google('gemini-2.5-flash'),
+      model: google(GEMINI_MODEL),
       prompt,
       temperature: 0.3,
     });

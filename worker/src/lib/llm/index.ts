@@ -2,6 +2,7 @@ import { streamText, generateText } from 'ai';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import type { GenerationRequirements } from '../../types';
 import { buildArticlePrompt, buildFiveWOneHPrompt } from './prompts';
+import { GEMINI_MODEL } from './model';
 
 export interface StreamArticleOptions {
   subtitles: string;
@@ -25,7 +26,7 @@ export async function streamArticle(
   const google = createGoogleGenerativeAI({ apiKey });
 
   const result = streamText({
-    model: google('gemini-2.5-flash'),
+    model: google(GEMINI_MODEL),
     prompt,
     temperature: 0.7,
     maxOutputTokens: 65536,
@@ -122,7 +123,7 @@ export async function generateFiveWOneH(
   const google = createGoogleGenerativeAI({ apiKey });
 
   const result = await generateText({
-    model: google('gemini-2.5-flash'),
+    model: google(GEMINI_MODEL),
     prompt,
     temperature: 0.3,
   });
