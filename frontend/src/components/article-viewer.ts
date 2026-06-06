@@ -30,6 +30,7 @@ export class ArticleViewer {
   private currentChapterId: string | null = null;
   private articleContainer: HTMLDivElement;
   private currentChapterContent = '';
+  private isDestroyed = false;
 
   constructor(container: HTMLElement, options: ArticleViewerOptions) {
     this.options = options;
@@ -72,7 +73,7 @@ export class ArticleViewer {
     // 绑定返回按钮
     const backBtn = viewer.querySelector('.back-btn');
     backBtn?.addEventListener('click', () => {
-      this.cancelStream?.();
+      this.destroy();
       this.options.onBack();
     });
 
@@ -82,6 +83,13 @@ export class ArticleViewer {
   private startGeneration(): void {
     const statusEl = this.element.querySelector('.generation-status');
     const indicatorEl = this.element.querySelector('.bg-green-500');
+
+    // 显式重置状态为"生成中"
+    if (statusEl) statusEl.textContent = '生成中...';
+    if (indicatorEl) {
+      indicatorEl.classList.add('animate-pulse', 'bg-green-500');
+      indicatorEl.classList.remove('bg-gray-300', 'bg-red-500');
+    }
 
     this.cancelStream = streamGenerateArticle({
       subtitles: this.options.subtitles,
@@ -109,6 +117,7 @@ export class ArticleViewer {
       },
 
       onDone: (sessionId) => {
+        if (this.isDestroyed) return;
         this.sessionId = sessionId;
         if (statusEl) statusEl.textContent = '生成完成';
         indicatorEl?.classList.remove('animate-pulse');
@@ -116,6 +125,7 @@ export class ArticleViewer {
       },
 
       onError: (message) => {
+        if (this.isDestroyed) return;
         if (statusEl) statusEl.textContent = `生成失败: ${message}`;
         indicatorEl?.classList.replace('bg-green-500', 'bg-red-500');
         indicatorEl?.classList.remove('animate-pulse');
@@ -203,7 +213,9 @@ export class ArticleViewer {
   }
 
   destroy(): void {
+    this.isDestroyed = true;
     this.cancelStream?.();
+    this.cancelStream = null;
     this.element.remove();
   }
 }
