@@ -1,6 +1,8 @@
 import type { SubtitleRequest, SubtitleResponse, SummarizeRequest, SummarizeResponse, GenerateRequest } from '../../../worker/src/types';
 
-const API_BASE = '/api';
+const API_BASE = window.location.hostname === 'localhost'
+  ? '/api'
+  : 'https://youtube-to-article.zerosrat.workers.dev/api';
 
 export async function extractSubtitles(url: string): Promise<SubtitleResponse> {
   const response = await fetch(`${API_BASE}/extract-subtitles`, {
