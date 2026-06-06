@@ -122,6 +122,12 @@ export class ArticleViewer {
         if (statusEl) statusEl.textContent = '生成完成';
         indicatorEl?.classList.remove('animate-pulse');
         indicatorEl?.classList.replace('bg-green-500', 'bg-gray-300');
+        // 确保 loading 被隐藏，显示内容区域（即使没有收到任何 chunk）
+        const streamingText = this.articleContainer.querySelector('.streaming-text');
+        const loadingContainer = this.articleContainer.querySelector('.loading-container');
+        loadingContainer?.classList.add('hidden');
+        streamingText?.classList.remove('hidden');
+        this.renderContent();
       },
 
       onError: (message) => {

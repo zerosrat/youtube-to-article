@@ -81,14 +81,38 @@ app.post('/api/generate-article', async (c) => {
     let fullContent = '';
     let currentChapterId: string | null = null;
 
+    let textStream;
     try {
-      const { textStream } = await streamArticle({
+      const result = await streamArticle({
         subtitles,
         requirements,
         apiKey
       });
+      textStream = result.textStream;
+    } catch (err) {
+      await stream.writeSSE({
+        data: JSON.stringify({ type: 'error', message: (err as Error).message }),
+        event: 'error'
+      });
+      return;
+    }
 
-      for await (const chunk of textStream) {
+    try {
+      const reader = textStream.getReader();
+
+      while (true) {
+        const result = await reader.read();
+        const { done, value } = result;
+
+        if (done) {
+          // 如果没有收到任何内容，可能是 API 错误
+          if (!fullContent) {
+            throw new Error('生成失败：API 返回空响应，可能是配额超限或模型错误');
+          }
+          break;
+        }
+
+        const chunk = value;
         fullContent += chunk;
 
         // 检测章节标题，需要分割内容
