@@ -18,14 +18,12 @@ export interface InputFormCallbacks {
 export class InputForm {
   private element: HTMLFormElement;
   private callbacks: InputFormCallbacks;
-  private submitButton: HTMLButtonElement;
 
   constructor(container: HTMLElement, callbacks: InputFormCallbacks) {
     this.callbacks = callbacks;
     this.element = this.createForm();
     container.appendChild(this.element);
 
-    this.submitButton = this.element.querySelector('button[type="submit"]') as HTMLButtonElement;
     this.bindEvents();
   }
 
@@ -77,7 +75,7 @@ export class InputForm {
             </div>
           </div>
 
-          <button type="submit" class="btn-primary w-full flex items-center justify-center gap-2">
+          <button type="submit" class="btn-primary w-full flex items-center justify-center gap-2" id="submit-btn">
             <span>开始生成</span>
             <svg class="w-4 h-4 hidden animate-spin" id="loading-icon" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -143,14 +141,18 @@ export class InputForm {
   }
 
   private setLoading(loading: boolean): void {
-    this.submitButton.disabled = loading;
-    const loadingIcon = this.submitButton.querySelector('#loading-icon');
-    const text = this.submitButton.querySelector('span');
+    const submitBtn = this.element.querySelector('#submit-btn') as HTMLButtonElement;
+    const loadingIcon = submitBtn?.querySelector('#loading-icon');
+    const text = submitBtn?.querySelector('span');
 
     if (loading) {
+      submitBtn?.classList.add('opacity-75', 'cursor-not-allowed');
+      submitBtn && (submitBtn.disabled = true);
       loadingIcon?.classList.remove('hidden');
       if (text) text.textContent = '提取字幕中...';
     } else {
+      submitBtn?.classList.remove('opacity-75', 'cursor-not-allowed');
+      submitBtn && (submitBtn.disabled = false);
       loadingIcon?.classList.add('hidden');
       if (text) text.textContent = '开始生成';
     }
