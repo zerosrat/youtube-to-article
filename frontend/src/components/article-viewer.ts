@@ -135,6 +135,12 @@ export class ArticleViewer {
         if (statusEl) statusEl.textContent = `生成失败: ${message}`;
         indicatorEl?.classList.replace('bg-green-500', 'bg-red-500');
         indicatorEl?.classList.remove('animate-pulse');
+        // 隐藏 loading，显示错误信息
+        const loadingContainer = this.articleContainer.querySelector('.loading-container');
+        const streamingText = this.articleContainer.querySelector('.streaming-text');
+        loadingContainer?.classList.add('hidden');
+        streamingText?.classList.remove('hidden');
+        streamingText!.innerHTML = `<div class="text-red-600">生成失败: ${this.escapeHtml(message)}</div>`;
       }
     });
   }
