@@ -21,3 +21,22 @@
     @apply bg-white rounded-xl shadow-sm border border-gray-200;
   }
 }
+
+/* 5W1H Drawer Animations */
+.five-w-one-h-drawer .drawer-overlay {
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+.five-w-one-h-drawer .drawer-overlay.opacity-0 {
+  opacity: 0;
+}
+
+.five-w-one-h-drawer .drawer-panel {
+  transform: translateX(0);
+  transition: transform 0.3s ease;
+}
+
+.five-w-one-h-drawer .drawer-panel.translate-x-full {
+  transform: translateX(100%);
+}
