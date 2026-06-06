@@ -6,8 +6,10 @@ export class FiveWOneHPanel {
   private sessionId: string;
   private chapterId: string;
   private chapterTitle: string;
-  private cachedSummary: FiveWOneH | null = null;
   private isLoading = false;
+
+  // 静态缓存：key 为 "sessionId:chapterId"
+  private static cache = new Map<string, FiveWOneH>();
 
   constructor(container: HTMLElement, sessionId: string, chapterId: string, chapterTitle: string) {
     this.sessionId = sessionId;
@@ -108,17 +110,33 @@ export class FiveWOneHPanel {
     `;
   }
 
+  private getCacheKey(): string {
+    return `${this.sessionId}:${this.chapterId}`;
+  }
+
   private async loadSummary(): Promise<void> {
-    if (this.isLoading || this.cachedSummary) return;
+    const cacheKey = this.getCacheKey();
+    const cachedSummary = FiveWOneHPanel.cache.get(cacheKey);
+
+    if (this.isLoading) return;
+
+    const bodyContainer = this.element.querySelector('.five-w-one-h-body');
+
+    // 如果有缓存，直接使用
+    if (cachedSummary) {
+      if (bodyContainer) {
+        bodyContainer.innerHTML = this.renderSummary(cachedSummary);
+      }
+      return;
+    }
 
     this.isLoading = true;
-    const bodyContainer = this.element.querySelector('.five-w-one-h-body');
 
     try {
       const result = await summarizeChapter(this.sessionId, this.chapterId);
 
       if (result.success && result.summary) {
-        this.cachedSummary = result.summary;
+        FiveWOneHPanel.cache.set(cacheKey, result.summary);
         if (bodyContainer) {
           bodyContainer.innerHTML = this.renderSummary(result.summary);
         }
