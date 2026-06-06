@@ -29,6 +29,7 @@ export class ArticleViewer {
   private cancelStream: (() => void) | null = null;
   private currentChapterId: string | null = null;
   private articleContainer: HTMLDivElement;
+  private currentChapterContent = '';
 
   constructor(container: HTMLElement, options: ArticleViewerOptions) {
     this.options = options;
@@ -84,12 +85,22 @@ export class ArticleViewer {
       sessionId: `sess_${Date.now()}`,
 
       onChunk: (text) => {
+        // 检测章节标题，从内容中移除（因为已在 onChapter 中单独处理）
+        const chapterMatch = text.match(/^##\s+(.+)$/m);
+        if (chapterMatch) {
+          // 只保留标题后的内容
+          const afterTitle = text.split(/^##\s+.+$/m)[1] || '';
+          this.currentChapterContent += afterTitle;
+        } else {
+          this.currentChapterContent += text;
+        }
         this.content += text;
         this.renderContent();
       },
 
       onChapter: (id, title) => {
         this.currentChapterId = id;
+        this.currentChapterContent = '';
         this.createChapterSection(id, title);
       },
 
@@ -112,35 +123,15 @@ export class ArticleViewer {
     const streamingText = this.articleContainer.querySelector('.streaming-text');
     if (!streamingText) return;
 
-    // 解析 Markdown 章节
-    const parts = this.content.split(/^(##\s+.+)$/m);
-    let html = '';
-
-    for (let i = 0; i < parts.length; i++) {
-      const part = parts[i];
-
-      if (part.startsWith('## ')) {
-        // 章节标题已在 onChapter 中处理
-        continue;
-      }
-
-      if (i === 0) {
-        // 第一部分（引言）
-        html += this.markdownToHtml(part);
-      } else if (part.trim()) {
-        // 章节内容
-        html += this.markdownToHtml(part);
-      }
-    }
-
-    // 更新当前章节内容
+    // 更新当前章节内容（追加模式）
     if (this.currentChapterId && this.chapters.has(this.currentChapterId)) {
       const chapter = this.chapters.get(this.currentChapterId)!;
-      chapter.contentElement.innerHTML = this.markdownToHtml(
-        this.extractChapterContent(this.content, chapter.title)
-      );
+      chapter.contentElement.innerHTML = this.markdownToHtml(this.currentChapterContent);
     } else {
-      streamingText.innerHTML = html;
+      // 还没有章节时，显示引言内容
+      const introMatch = this.content.match(/^[\s\S]*?(?=##|$)/);
+      const introText = introMatch ? introMatch[0] : this.content;
+      streamingText.innerHTML = this.markdownToHtml(introText);
     }
   }
 
@@ -188,12 +179,6 @@ export class ArticleViewer {
     });
   }
 
-  private extractChapterContent(fullContent: string, chapterTitle: string): string {
-    const regex = new RegExp(`##\\s+${this.escapeRegExp(chapterTitle)}\\s*\\n([\\s\\S]*?)(?=##|$)`);
-    const match = fullContent.match(regex);
-    return match?.[1]?.trim() || '';
-  }
-
   private markdownToHtml(text: string): string {
     return text
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
@@ -206,10 +191,6 @@ export class ArticleViewer {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
-  }
-
-  private escapeRegExp(string: string): string {
-    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
   destroy(): void {
