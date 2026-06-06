@@ -26,6 +26,7 @@ export function buildArticlePrompt(
   parts.push('字幕内容：');
   parts.push(subtitles);
   parts.push('');
+  parts.push('要求：直接输出转换后的文章内容，不要有任何开场白或解释。');
   parts.push('请开始生成：');
 
   return parts.join('\n');

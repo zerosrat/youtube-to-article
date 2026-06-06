@@ -91,13 +91,30 @@ app.post('/api/generate-article', async (c) => {
       for await (const chunk of textStream) {
         fullContent += chunk;
 
-        // 检测章节标题
-        const chapterMatch = chunk.match(/^##\s+(.+)$/m);
+        // 检测章节标题，需要分割内容
+        const chapterMatch = chunk.match(/^(##\s+.+)$/m);
+
         if (chapterMatch) {
           const chapters = parseChapterFromContent(fullContent);
           const latestChapter = chapters[chapters.length - 1];
+
           if (latestChapter && latestChapter.id !== currentChapterId) {
             currentChapterId = latestChapter.id;
+
+            // 分割 chunk：标题前的内容、标题、标题后的内容
+            const titleIndex = chunk.indexOf(chapterMatch[0]);
+            const beforeTitle = chunk.slice(0, titleIndex);
+            const afterTitle = chunk.slice(titleIndex + chapterMatch[0].length).trimStart();
+
+            // 1. 先发送章节前的内容
+            if (beforeTitle) {
+              await stream.writeSSE({
+                data: JSON.stringify({ type: 'content', text: beforeTitle }),
+                event: 'chunk'
+              });
+            }
+
+            // 2. 发送章节事件
             await stream.writeSSE({
               data: JSON.stringify({
                 type: 'chapter',
@@ -106,9 +123,19 @@ app.post('/api/generate-article', async (c) => {
               }),
               event: 'chapter'
             });
+
+            // 3. 发送章节后的内容
+            if (afterTitle) {
+              await stream.writeSSE({
+                data: JSON.stringify({ type: 'content', text: afterTitle }),
+                event: 'chunk'
+              });
+            }
+            continue; // 跳过默认的 content 发送
           }
         }
 
+        // 没有章节标题，正常发送内容
         await stream.writeSSE({
           data: JSON.stringify({ type: 'content', text: chunk }),
           event: 'chunk'
