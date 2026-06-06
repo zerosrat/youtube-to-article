@@ -28,7 +28,7 @@ export async function streamArticle(
     model: google('gemini-2.5-flash'),
     prompt,
     temperature: 0.7,
-    maxOutputTokens: 8192,
+    maxOutputTokens: 65536,
   });
 
   return { textStream: result.textStream };
