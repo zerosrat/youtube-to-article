@@ -3,6 +3,7 @@ import { streamSSE } from 'hono/streaming';
 import type { SubtitleRequest, SummarizeRequest, GenerateRequest } from './types';
 import { extractSubtitles } from './lib/subtitles';
 import { streamArticle, generateFiveWOneH } from './lib/llm';
+import { translateTitle } from './lib/translate';
 import { ContextCache, generateSessionId, parseChapterFromContent } from './lib/context-cache';
 
 interface Env {
@@ -47,6 +48,15 @@ app.post('/api/extract-subtitles', async (c) => {
     url: body.url,
     apiToken: c.env.YOUTUBE_TRANSCRIPT_API_TOKEN
   });
+
+  // 翻译标题为中文
+  if (result.success && result.title) {
+    const apiKey = c.env.GEMINI_API_KEY;
+    if (apiKey) {
+      result.title = await translateTitle(result.title, apiKey);
+    }
+  }
+
   return c.json(result);
 });
 
