@@ -22,61 +22,6 @@
 ### API 配额超限提示
 ![API 配额超限](./docs/assets/api-quota-exceeded.png)
 
-## 技术栈
-
-- **Frontend**: Vite + TypeScript + Tailwind CSS
-- **Backend**: Cloudflare Worker + Hono
-- **AI**: Gemini AI Studio API
-- **包管理**: pnpm
-
-## 开发
-
-### 1. 安装依赖
-
-```bash
-pnpm install
-```
-
-### 2. 配置环境变量
-
-```bash
-# 编辑 worker/.dev.vars，添加你的 Gemini API Key
-GEMINI_API_KEY=your_api_key_here
-```
-
-### 3. 启动开发服务器
-
-```bash
-# 终端 1: 启动 Worker
-pnpm dev:worker
-
-# 终端 2: 启动 Frontend
-pnpm dev
-```
-
-### 4. 构建
-
-```bash
-pnpm build
-```
-
-## 部署
-
-### 1. 部署 Worker
-
-```bash
-cd worker
-wrangler secret put GEMINI_API_KEY
-wrangler deploy
-```
-
-### 2. 部署 Pages
-
-```bash
-cd frontend
-wrangler pages deploy dist
-```
-
 ## 实现细节
 
 ### 如何获取和处理 YouTube 字幕
@@ -163,6 +108,61 @@ wrangler pages deploy dist
 5. **零成本运维**
    - 完全使用 Cloudflare, Gemini, youtube-transcript 免费额度
    - 无数据库、无服务器维护负担
+
+## 技术栈
+
+- **Frontend**: Vite + TypeScript + Tailwind CSS
+- **Backend**: Cloudflare Worker + Hono
+- **AI**: Gemini AI Studio API
+- **包管理**: pnpm
+
+## 开发
+
+### 1. 安装依赖
+
+```bash
+pnpm install
+```
+
+### 2. 配置环境变量
+
+```bash
+# 编辑 worker/.dev.vars，添加你的 Gemini API Key
+GEMINI_API_KEY=your_api_key_here
+```
+
+### 3. 启动开发服务器
+
+```bash
+# 终端 1: 启动 Worker
+pnpm dev:worker
+
+# 终端 2: 启动 Frontend
+pnpm dev
+```
+
+### 4. 构建
+
+```bash
+pnpm build
+```
+
+## 部署
+
+### 1. 部署 Worker
+
+```bash
+cd worker
+wrangler secret put GEMINI_API_KEY
+wrangler deploy
+```
+
+### 2. 部署 Pages
+
+```bash
+cd frontend
+wrangler pages deploy dist
+```
 
 ## 项目结构
 
