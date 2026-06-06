@@ -164,13 +164,11 @@ export class ArticleViewer {
         </button>
       </div>
       <div class="chapter-content text-gray-700 leading-relaxed"></div>
-      <div class="five-w-one-h-container"></div>
     `;
 
     this.articleContainer.appendChild(chapterEl);
 
     const contentEl = chapterEl.querySelector('.chapter-content') as HTMLElement;
-    const fiveWOneHContainer = chapterEl.querySelector('.five-w-one-h-container') as HTMLElement;
 
     this.chapters.set(id, {
       id,
@@ -179,13 +177,12 @@ export class ArticleViewer {
       contentElement: contentEl
     });
 
-    // 绑定 5W1H 按钮
+    // 绑定 5W1H 按钮 - 点击立即打开抽屉
     const btn = chapterEl.querySelector('.five-w-one-h-btn');
-    let panel: FiveWOneHPanel | null = null;
-
     btn?.addEventListener('click', () => {
-      if (!panel && this.sessionId) {
-        panel = new FiveWOneHPanel(fiveWOneHContainer, this.sessionId, id);
+      if (this.sessionId) {
+        // 传入 document.body 作为容器，抽屉会固定定位
+        new FiveWOneHPanel(document.body, this.sessionId, id, title);
       }
     });
   }
