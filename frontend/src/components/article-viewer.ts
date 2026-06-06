@@ -60,7 +60,11 @@ export class ArticleViewer {
       <article class="card p-8">
         <h1 class="text-3xl font-bold text-gray-900 mb-8">${this.escapeHtml(this.options.title)}</h1>
         <div class="article-content prose prose-lg max-w-none">
-          <div class="streaming-text text-gray-700 leading-relaxed whitespace-pre-wrap"></div>
+          <div class="loading-container flex flex-col items-center justify-center py-20">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+            <p class="mt-4 text-gray-600">正在生成中文文章...</p>
+          </div>
+          <div class="streaming-text text-gray-700 leading-relaxed whitespace-pre-wrap hidden"></div>
         </div>
       </article>
     `;
@@ -121,7 +125,14 @@ export class ArticleViewer {
 
   private renderContent(): void {
     const streamingText = this.articleContainer.querySelector('.streaming-text');
+    const loadingContainer = this.articleContainer.querySelector('.loading-container');
     if (!streamingText) return;
+
+    // 首次有内容时，隐藏 loading，显示内容区
+    if (this.currentChapterContent.trim() || this.content.trim()) {
+      loadingContainer?.classList.add('hidden');
+      streamingText.classList.remove('hidden');
+    }
 
     // 更新当前章节内容（追加模式）
     if (this.currentChapterId && this.chapters.has(this.currentChapterId)) {
