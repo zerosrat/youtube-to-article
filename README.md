@@ -11,6 +11,17 @@
 - 章节级 5W1H 总结（Who/What/When/Where/Why/How）
 - 硬编码字幕作为演示 fallback
 
+## 截图展示
+
+### 文章生成成功
+![文章生成成功](./docs/assets/article-generation-success.png)
+
+### 5W1H 章节分析
+![5W1H 分析](./docs/assets/5w1h-analysis.png)
+
+### API 配额超限提示
+![API 配额超限](./docs/assets/api-quota-exceeded.png)
+
 ## 技术栈
 
 - **Frontend**: Vite + TypeScript + Tailwind CSS
@@ -150,7 +161,7 @@ wrangler pages deploy dist
    - 严格的接口契约，减少运行时错误
 
 5. **零成本运维**
-   - 完全使用 Cloudflare 免费额度
+   - 完全使用 Cloudflare, Gemini, youtube-transcript 免费额度
    - 无数据库、无服务器维护负担
 
 ## 项目结构
