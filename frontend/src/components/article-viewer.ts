@@ -192,6 +192,7 @@ export class ArticleViewer {
 
   private markdownToHtml(text: string): string {
     return text
+      .trimStart() // 去除开头空白，避免初始换行
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.+?)\*/g, '<em>$1</em>')
       .replace(/`(.+?)`/g, '<code>$1</code>')
